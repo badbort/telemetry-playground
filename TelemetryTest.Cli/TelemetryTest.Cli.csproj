@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>a15f118d-58c0-4941-b936-47a16d54cefc</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.2.0"/>
+        <PackageReference Include="Azure.Storage.Queues" Version="12.17.1"/>
+        <PackageReference Include="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1"/>
+        <PackageReference Include="McMaster.Extensions.Hosting.CommandLine" Version="4.1.1"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
+        <PackageReference Include="Octokit" Version="11.0.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
+        <PackageReference Include="System.Linq.Async" Version="6.0.1"/>
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.8.0"/>
+        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.8.0"/>
+        <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.8.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\TelemetryTest.AzureStorage\TelemetryTest.AzureStorage.csproj" />
+        <ProjectReference Include="..\TelemetryTest.Common\TelemetryTest.Common.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="appsettings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+</Project>

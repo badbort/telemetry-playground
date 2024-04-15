@@ -1,0 +1,6 @@
+@TelemetryTest.WebApi_HostAddress = http://localhost:5282
+
+GET {{TelemetryTest.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <AzureFunctionsVersion>V4</AzureFunctionsVersion>
+        <OutputType>Exe</OutputType>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>TelemetryTest.Bff</RootNamespace>
+        <UserSecretsId>c42d67fe-ffd9-489f-9fa2-c8ed539638db</UserSecretsId>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.2.0" />
+        <PackageReference Include="Azure.Storage.Queues" Version="12.17.1" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.21.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.1.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.OpenApi" Version="1.5.1" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.3.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.2" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.0" />
+        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="Azure.Data.Tables" Version="12.8.3" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.8.0" />
+        <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.8.0" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.8.1" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Update="host.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="local.settings.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\TelemetryTest.AzureStorage\TelemetryTest.AzureStorage.csproj" />
+      <ProjectReference Include="..\..\TelemetryTest.Common\TelemetryTest.Common.csproj" />
+    </ItemGroup>
+</Project>
