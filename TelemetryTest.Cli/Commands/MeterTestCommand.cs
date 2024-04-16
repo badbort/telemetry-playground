@@ -14,6 +14,9 @@ public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger
 
     [Option("--events")]
     public bool CreateEvents { get; set; }
+    
+    [Option("--max")]
+    public int? Max { get; set; }
 
     public override async Task OnExecuteAsync(CommandLineApplication app, CancellationToken cancellationToken)
     {
@@ -56,20 +59,25 @@ public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger
 
             if (Delay.HasValue)
                 await Task.Delay(Delay.Value);
+            
+            if(Max.HasValue && Max < i)
+                break;
+            
         } while (!cancellationToken.IsCancellationRequested);
-
+        
+        activity?.Stop();
         Logger.LogInformation($"Stopped after calculating factors for numbers up to {i}. Primes found: {primeCount}");
     }
 
     private void CreateEventIfNecessary(Activity? activity, int prime, int nth)
     {
-        if (CreateEvents && activity != null)
+        if (!CreateEvents) 
+            return;
+        
+        activity?.AddEvent(new ActivityEvent("Discovered Prime", tags: new ActivityTagsCollection
         {
-            activity.AddEvent(new ActivityEvent("Discovered Prime " + i, tags: new ActivityTagsCollection
-            {
-                { "Value", prime },
-                { "Nth", nth }
-            }));
-        }
+            { "Value", prime },
+            { "Nth", nth }
+        }));
     }
 }
