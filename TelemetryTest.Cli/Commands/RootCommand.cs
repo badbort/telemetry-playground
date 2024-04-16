@@ -10,9 +10,5 @@ namespace TelemetryTest.Cli.Commands;
 [Command]
 [UsedImplicitly]
 [Subcommand(typeof(QueueJobCommand))]
-public class RootCommand : LogicalGroupCommand
-{
-    public RootCommand(IConsole console, ILogger<RootCommand> logger) : base(console, logger)
-    {
-    }
-}
+[Subcommand(typeof(MeterTestCommand))]
+public class RootCommand(IConsole console, ILogger<RootCommand> logger) : LogicalGroupCommand(console, logger);

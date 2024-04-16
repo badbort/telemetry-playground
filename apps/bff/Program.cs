@@ -64,18 +64,7 @@ public static class Program
             {
                 var functionAppSettings = context.Configuration.Get<FunctionAppSettings>();
                 var telemetry = context.Configuration.GetSection(TelemetryConfiguration.ConfigSection).Get<TelemetryConfiguration>();
-                
-                services.AddSingleton<IOpenApiHttpTriggerAuthorization>(_ =>
-                {
-                    var auth = new OpenApiHttpTriggerAuthorization(req =>
-                    {
-                        var result = default(OpenApiAuthorizationResult);
-                        return Task.FromResult(result);
-                    });
-
-                    return auth;
-
-                });
+             
                 services.AddHttpClient();
                 
                 services.AddOpenTelemetry()
@@ -89,9 +78,6 @@ public static class Program
                         builder.AddSource(ActivitySource.Name);
                         builder.AddHttpClientInstrumentation();
                         builder.SetSampler<AlwaysOnSampler>();
-                        // Not sure if this is needed
-                        builder.AddSource("Azure.*");
-                        builder.AddSource("Microsoft.Azure.Functions.Worker");
 
                         if (!string.IsNullOrEmpty(functionAppSettings?.ApplicationInsightsConnectionString))
                             builder.AddAzureMonitorTraceExporter(o => o.ConnectionString = functionAppSettings.ApplicationInsightsConnectionString);

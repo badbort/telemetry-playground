@@ -11,9 +11,10 @@ using TelemetryTest.AzureStorage.Queues;
 namespace TelemetryTest.Cli.Commands;
 
 [Command("queue-job")]
-public class QueueJobCommand : BaseAsyncCommand
+public class QueueJobCommand(IConsole console, IOptions<Settings> appSettings, ILogger<QueueJobCommand> logger)
+    : BaseAsyncCommand(console, logger)
 {
-    private readonly Settings _appSettings;
+    private readonly Settings _appSettings = appSettings.Value;
 
     [Option] 
     public string? StorageConnectionString { get; set; }
@@ -23,11 +24,6 @@ public class QueueJobCommand : BaseAsyncCommand
     
     [Option]
     public int Input { get; set; }
-    
-    public QueueJobCommand(IConsole console, IOptions<Settings> appSettings, ILogger<QueueJobCommand> logger) : base(console, logger)
-    {
-        _appSettings = appSettings.Value;
-    }
 
     public override async Task OnExecuteAsync(CommandLineApplication app, CancellationToken cancellationToken)
     {
@@ -37,6 +33,8 @@ public class QueueJobCommand : BaseAsyncCommand
         using var activity = Program.ActivitySource.StartActivity(nameof(QueueJobCommand));
         activity?.SetTag($"command.{nameof(Input)}", Input);
             
+        Logger.LogInformation($"Executing job command with input {Input}");
+        
         var queueServiceClient = new QueueServiceClient(StorageConnectionString, new QueueClientOptions {MessageEncoding = QueueMessageEncoding.Base64});
         await queueServiceClient.CreateQueueAsync(Queue, cancellationToken: cancellationToken);
         var queueClient = queueServiceClient.GetQueueClient(Queue);
@@ -49,6 +47,9 @@ public class QueueJobCommand : BaseAsyncCommand
         queueItem.TraceParent = Activity.Current?.Id;
         
         // Send the item
-        await queueClient.SendMessageAsync(BinaryData.FromObjectAsJson(queueItem), cancellationToken: cancellationToken);
+        var response = await queueClient.SendMessageAsync(BinaryData.FromObjectAsJson(queueItem), cancellationToken: cancellationToken);
+        activity?.SetTag("job.MessageId", response.Value.MessageId);
+        
+        Logger.LogInformation($"Job was successfully dispatched with input {Input} and returned job id {response.Value.MessageId}");
     }
 }

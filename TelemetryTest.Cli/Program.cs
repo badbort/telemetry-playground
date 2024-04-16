@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using Azure.Monitor.OpenTelemetry.Exporter;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Configuration;
@@ -17,17 +18,12 @@ namespace TelemetryTest.Cli;
 
 class Program
 {
-    public static ActivitySource ActivitySource = new(AppName);
-    public const string AppName = "TelemetryTest.Cli";
+    private const string AppName = "TelemetryTest.Cli";
+    internal static readonly ActivitySource ActivitySource = new(AppName);
+    internal static readonly Meter Meter = new(AppName);
 
     public static async Task<int> Main(string[] args)
     {
-        var resourceAttributes = new Dictionary<string, object>
-        {
-            { "service.name", AppName },
-            { "service.namespace", typeof(Program).Assembly.GetName().Name! }
-        };
-
         var builder = new HostBuilder()
             .ConfigureAppConfiguration(config =>
             {
@@ -36,7 +32,12 @@ class Program
             })
             .ConfigureLogging((hostContext, logging) =>
             {
-                var telemetrySettings = hostContext.Configuration.GetValue<TelemetryConfiguration>(TelemetryConfiguration.ConfigSection);
+                logging.Configure(o =>
+                {
+                    o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId;
+                });
+                
+                var telemetrySettings = hostContext.Configuration.GetSection(TelemetryConfiguration.ConfigSection).Get<TelemetryConfiguration>();
 
                 logging.AddSimpleConsole(o =>
                 {
@@ -47,10 +48,6 @@ class Program
                 logging.SetMinimumLevel(LogLevel.Warning);
                 logging.AddFilter("TelemetryTest", LogLevel.Debug);
                 
-                logging.Configure(o =>
-                {
-                    o.ActivityTrackingOptions = ActivityTrackingOptions.TraceId | ActivityTrackingOptions.SpanId;
-                });
                 
                 // Send logs using the OpenTelemetry logger provider
                 logging.AddOpenTelemetry(builder =>
@@ -79,19 +76,21 @@ class Program
                 services.AddOpenTelemetry()
                     .ConfigureResource(builder =>
                     {
-                        builder.AddAttributes(resourceAttributes);
+                        builder.AddAttributes(new Dictionary<string, object>
+                        {
+                            { "service.name", AppName },
+                            { "service.namespace", typeof(Program).Assembly.GetName().Name! }
+                        });
+                        
                         builder.AddService(serviceName: AppName);
                     })
                     .WithTracing(builder =>
                     {
-                        //builder.AddSource(ActivitySource.Name);
-                        builder.AddHttpClientInstrumentation();
+                        builder.AddSource(ActivitySource.Name);
                         builder.SetSampler<AlwaysOnSampler>();
-                        
-                        // Not sure if this is needed
-                        builder.AddSource("Azure.*");
-                        builder.AddSource("Microsoft.Azure.Functions.Worker");
 
+                        builder.AddHttpClientInstrumentation();
+                        
                         if (!string.IsNullOrEmpty(telemetrySettings?.ApplicationInsightsConnectionString))
                             builder.AddAzureMonitorTraceExporter(o => o.ConnectionString = telemetrySettings.ApplicationInsightsConnectionString);
                         
@@ -101,8 +100,9 @@ class Program
                     })
                     .WithMetrics(builder =>
                     {
-                        //builder.AddMeter(MeterName);
+                        builder.AddMeter(Meter.Name);
                         builder.AddHttpClientInstrumentation();
+                        
                         if (!string.IsNullOrEmpty(telemetrySettings?.ApplicationInsightsConnectionString))
                             builder.AddAzureMonitorMetricExporter(o => o.ConnectionString = telemetrySettings.ApplicationInsightsConnectionString);
                         
@@ -111,7 +111,7 @@ class Program
                             {
                                 o.Endpoint = new Uri(telemetrySettings.OtlpEndpoint);
                             });
-                    });
+                    }); 
             });
 
         return await builder.RunCommandLineApplicationAsync<RootCommand>(args);
