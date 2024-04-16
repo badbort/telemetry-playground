@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using McMaster.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
@@ -8,12 +9,22 @@ namespace TelemetryTest.Cli.Commands;
 [Command("meter-test")]
 public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger) : BaseAsyncCommand(console, logger)
 {
+    [Option("--delay", Description = "Delay in ms between calculation")]
+    public int? Delay { get; set; }
+
+    [Option("--events")]
+    public bool CreateEvents { get; set; }
+
     public override async Task OnExecuteAsync(CommandLineApplication app, CancellationToken cancellationToken)
     {
-        var factorsCounter = Program.Meter.CreateCounter<long>("FactorIterations");
+        using var activity = Program.ActivitySource.StartActivity(nameof(MeterTestCommand));
+        activity?.SetTag($"command.{nameof(Delay)}", Delay);
+        activity?.SetTag($"command.{nameof(CreateEvents)}", CreateEvents);
+
+        var factorsCounter = Program.Meter.CreateCounter<long>("FactorCalculations");
         var primesCounter = Program.Meter.CreateUpDownCounter<long>("Primes");
         var histogram = Program.Meter.CreateHistogram<long>("Factors");
-        
+
         int i = 4;
         int primeCount = 0;
 
@@ -22,7 +33,7 @@ public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger
 
         do
         {
-            var factors =  Workloads.CalculateFactors(i);
+            var factors = Workloads.CalculateFactors(i);
             histogram.Record(factors.Count, new KeyValuePair<string, object?>("Input", i));
 
             factorsCounter.Add(1);
@@ -31,6 +42,7 @@ public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger
             {
                 primesCounter.Add(1);
                 Logger.LogInformation($"Found prime #{++primeCount}: {i}");
+                CreateEventIfNecessary(activity, i, primeCount);
             }
 
             if (i % 100 == 0)
@@ -39,11 +51,25 @@ public class MeterTestCommand(IConsole console, ILogger<MeterTestCommand> logger
             }
 
             i++;
-            
+
             // ReSharper disable once MethodSupportsCancellation
-            await Task.Delay(5);
+
+            if (Delay.HasValue)
+                await Task.Delay(Delay.Value);
         } while (!cancellationToken.IsCancellationRequested);
-        
+
         Logger.LogInformation($"Stopped after calculating factors for numbers up to {i}. Primes found: {primeCount}");
+    }
+
+    private void CreateEventIfNecessary(Activity? activity, int prime, int nth)
+    {
+        if (CreateEvents && activity != null)
+        {
+            activity.AddEvent(new ActivityEvent("Discovered Prime " + i, tags: new ActivityTagsCollection
+            {
+                { "Value", prime },
+                { "Nth", nth }
+            }));
+        }
     }
 }
